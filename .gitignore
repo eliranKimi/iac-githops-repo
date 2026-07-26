@@ -4,7 +4,7 @@
 # Ignore local state files (if present)
 *.tfstate
 *.tfstate.backup
-
+.terraform.lock.hcl
 # Ignore crash logs
 crash.log
 crash.*.log

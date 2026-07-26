@@ -25,9 +25,10 @@ module "vpc" {
 
   subnets = [
     {
-      subnet_name   = "gke-subnet"
-      subnet_ip     = "10.10.0.0/24"
-      subnet_region = var.region
+      subnet_name              = "gke-subnet"
+      subnet_ip                = "10.10.0.0/24"
+      subnet_region            = var.region
+      subnet_private_access    = true  # Required for GKE nodes to reach Google APIs without public IPs
     },
   ]
 

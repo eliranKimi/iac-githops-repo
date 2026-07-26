@@ -72,13 +72,14 @@ resource "google_iam_workload_identity_pool_provider" "github_provider" {
   description                        = "OIDC provider for GitHub Actions"
 
   attribute_mapping = {
-    "google.subject"       = "assertion.sub"
-    "attribute.actor"      = "assertion.actor"
-    "attribute.repository" = "assertion.repository"
-    "attribute.ref"        = "assertion.ref"
+    "google.subject"             = "assertion.sub"
+    "attribute.actor"            = "assertion.actor"
+    "attribute.repository"       = "assertion.repository"
+    "attribute.ref"              = "assertion.ref"
+    "attribute.repository_owner" = "assertion.repository_owner"
   }
 
-  # Restrict to only your GitHub org/user for security
+  # Use the mapped attribute (not the raw assertion) for the condition
   attribute_condition = "attribute.repository_owner == \"${var.github_org}\""
 
   oidc {
