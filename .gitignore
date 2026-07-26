@@ -1,0 +1,16 @@
+# Ignore local Terraform state and plugin directory
+.terraform/
+
+# Ignore local state files (if present)
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl
+# Ignore crash logs
+crash.log
+crash.*.log
+
+# Ignore override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json.terraform.lock.hcl

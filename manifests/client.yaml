@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: greeter-client
+  namespace: grpc-proxyless
+  labels:
+    app: greeter-client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: greeter-client
+  template:
+    metadata:
+      labels:
+        app: greeter-client
+    spec:
+      serviceAccountName: greeter-service-account
+      # Init container generates the xDS bootstrap config for Traffic Director
+      initContainers:
+      - name: grpc-td-init
+        image: gcr.io/trafficdirector-prod/td-grpc-bootstrap:0.15.0
+        args:
+        - "--output=/tmp/bootstrap/td-grpc-bootstrap.json"
+        - "--vpc-network-name=grpc-proxyless-vpc"
+        volumeMounts:
+        - mountPath: /tmp/bootstrap
+          name: grpc-td-bootstrap
+      containers:
+      - name: greeter-client
+        image: us-central1-docker.pkg.dev/utila-eliran-home/greeter/greeter:latest
+        command: ["/client"]
+        env:
+        - name: GRPC_XDS_BOOTSTRAP
+          value: /tmp/bootstrap/td-grpc-bootstrap.json
+        volumeMounts:
+        - mountPath: /tmp/bootstrap
+          name: grpc-td-bootstrap
+        resources:
+          requests:
+            cpu: "50m"
+            memory: "32Mi"
+          limits:
+            cpu: "200m"
+            memory: "64Mi"
+      volumes:
+      - name: grpc-td-bootstrap
+        emptyDir: {}

@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: greeter-server
+  namespace: grpc-proxyless
+  labels:
+    app: greeter-server
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: greeter-server
+  template:
+    metadata:
+      labels:
+        app: greeter-server
+    spec:
+      serviceAccountName: greeter-service-account
+      # Init container generates the xDS bootstrap config for Traffic Director.
+      # Required for the CLIENT-side xDS integration (load balancing).
+      initContainers:
+      - name: grpc-td-init
+        image: gcr.io/trafficdirector-prod/td-grpc-bootstrap:0.15.0
+        args:
+        - "--output=/tmp/bootstrap/td-grpc-bootstrap.json"
+        - "--vpc-network-name=grpc-proxyless-vpc"
+        volumeMounts:
+        - mountPath: /tmp/bootstrap
+          name: grpc-td-bootstrap
+      containers:
+      - name: greeter-server
+        image: us-central1-docker.pkg.dev/utila-eliran-home/greeter/greeter:latest
+        ports:
+        - name: grpc
+          containerPort: 50051
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /tmp/bootstrap
+          name: grpc-td-bootstrap
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "64Mi"
+          limits:
+            cpu: "500m"
+            memory: "128Mi"
+        readinessProbe:
+          grpc:
+            port: 50051
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          grpc:
+            port: 50051
+          initialDelaySeconds: 10
+          periodSeconds: 15
+      volumes:
+      - name: grpc-td-bootstrap
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: greeter-service
+  namespace: grpc-proxyless
+  annotations:
+    # This annotation tells GKE to create a Network Endpoint Group (NEG)
+    # for this service. Traffic Director uses the NEG to discover pod endpoints.
+    cloud.google.com/neg: '{"exposed_ports": {"50051": {"name": "greeter-neg"}}}'
+spec:
+  selector:
+    app: greeter-server
+  ports:
+    - name: grpc
+      protocol: TCP
+      port: 50051
+      targetPort: 50051
+  clusterIP: None # Headless service required for Traffic Director endpoint discovery

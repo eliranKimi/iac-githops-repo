@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: greeter-service-account
+  namespace: grpc-proxyless
+  annotations:
+    # Workload Identity binding: links this Kubernetes SA to the GCP SA
+    # that has Traffic Director (trafficdirector.client) permissions.
+    # The GCP SA is created and bound in traffic-director.tf.
+    iam.gke.io/gcp-service-account: greeter-sa@utila-eliran-home.iam.gserviceaccount.com
