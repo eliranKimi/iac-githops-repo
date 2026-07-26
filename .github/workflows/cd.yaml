@@ -1,0 +1,57 @@
+name: CD
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # Allows manual triggering
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          workload_identity_provider: 'projects/YOUR_GCP_PROJECT_ID/locations/global/workloadIdentityPools/github-pool/providers/github-provider' # Replace with your WIF provider
+          service_account: 'your-terraform-sa@eliran-home.iam.gserviceaccount.com' # Replace with your service account
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan
+
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: terraform apply -auto-approve tfplan
+
+  update-manifests:
+    runs-on: ubuntu-latest
+    needs: terraform
+    if: github.event_name == 'workflow_dispatch' # Only run when manually triggered
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Update image tag
+        run: |
+          sed -i "s|image:.*|image: gcr.io/eliran-home/greeter:${{ github.event.inputs.tag }}|g" manifests/server.yaml
+          sed -i "s|image:.*|image: gcr.io/eliran-home/greeter:${{ github.event.inputs.tag }}|g" manifests/client.yaml
+
+      - name: Commit and push changes
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "Update image tag to ${{ github.event.inputs.tag }}"
+          branch: main

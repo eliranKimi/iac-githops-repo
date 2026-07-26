@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: greeter-client
+  namespace: grpc-proxyless
+  labels:
+    app: greeter-client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: greeter-client
+  template:
+    metadata:
+      labels:
+        app: greeter-client
+    spec:
+      serviceAccountName: greeter-service-account
+      containers:
+      - name: greeter-client
+        image: your-gcr-project/greeter:latest # Replace with your GCR project
+        command: ["/client"]
