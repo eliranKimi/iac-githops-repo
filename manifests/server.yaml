@@ -14,13 +14,43 @@ spec:
     metadata:
       labels:
         app: greeter-server
+      annotations:
+        # Required for GKE Cloud Service Mesh proxyless gRPC injection.
+        # This annotation tells the GKE mesh dataplane to inject the xDS
+        # bootstrap config into the pod via GRPC_XDS_BOOTSTRAP env var.
+        security.cloud.google.com/use-workload-certificates: "true"
     spec:
       serviceAccountName: greeter-service-account
       containers:
       - name: greeter-server
         image: us-central1-docker.pkg.dev/utila-eliran-home/greeter/greeter:latest
         ports:
-        - containerPort: 50051
+        - name: grpc
+          containerPort: 50051
+          protocol: TCP
+        env:
+        # The xDS bootstrap config file path is injected by the GKE mesh
+        # dataplane init container when the annotation above is set.
+        # This env var tells the gRPC xDS library where to find the config.
+        - name: GRPC_XDS_BOOTSTRAP
+          value: /var/run/secrets/workload-spiffe-credentials/bootstrap.json
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "64Mi"
+          limits:
+            cpu: "500m"
+            memory: "128Mi"
+        readinessProbe:
+          grpc:
+            port: 50051
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          grpc:
+            port: 50051
+          initialDelaySeconds: 10
+          periodSeconds: 15
 ---
 apiVersion: v1
 kind: Service
@@ -31,7 +61,8 @@ spec:
   selector:
     app: greeter-server
   ports:
-    - protocol: TCP
+    - name: grpc
+      protocol: TCP
       port: 50051
       targetPort: 50051
-  clusterIP: None # Headless service
+  clusterIP: None # Headless service required for Traffic Director endpoint discovery

@@ -44,17 +44,12 @@ resource "google_project_iam_member" "gcr_pusher_sa_role" {
   member  = "serviceAccount:${google_service_account.gcr_pusher_sa.email}"
 }
 
-# Allow GKE nodes (default compute SA) to pull images from Artifact Registry
-# GKE nodes use the Compute Engine default service account by default
+# Allow GKE nodes to pull images from Artifact Registry
+# The GKE module creates a dedicated node service account (not the default compute SA)
 resource "google_project_iam_member" "gke_node_artifact_registry_reader" {
   project = var.project_id
   role    = "roles/artifactregistry.reader"
-  member  = "serviceAccount:${data.google_compute_default_service_account.default.email}"
-}
-
-# Data source to get the default Compute Engine service account
-data "google_compute_default_service_account" "default" {
-  project = var.project_id
+  member  = "serviceAccount:${module.gke.service_account}"
 }
 
 # Also grant storage.admin for legacy GCR (gcr.io) support
