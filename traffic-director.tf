@@ -67,14 +67,17 @@ resource "google_compute_backend_service" "grpc_backend_service" {
   }
 }
 
-# URL Map to route requests to the backend service
+# URL Map to route requests to the backend service.
+# The host must match EXACTLY what the client uses in xds:///greeter-service:50051
+# Traffic Director uses the host:port as the Listener resource name.
 resource "google_compute_url_map" "grpc_url_map" {
   name            = "greeter-url-map"
   project         = var.project_id
   default_service = google_compute_backend_service.grpc_backend_service.id
 
   host_rule {
-    hosts        = ["greeter-service"]
+    # Include both with and without port to handle all client configurations
+    hosts        = ["greeter-service", "greeter-service:50051"]
     path_matcher = "allpaths"
   }
 
