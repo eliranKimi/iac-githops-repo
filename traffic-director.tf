@@ -24,14 +24,18 @@ resource "google_service_account_iam_member" "greeter_workload_identity" {
 }
 
 # Health Check for the gRPC service
+# Uses port 50052 (plain gRPC health server) to avoid the chicken-and-egg
+# problem where xds.NewGRPCServer() starts in NOT_SERVING mode until it
+# receives config from Traffic Director, but Traffic Director won't send
+# config until the health check passes.
 resource "google_compute_health_check" "grpc_health_check" {
   name               = "grpc-health-check"
   project            = var.project_id
-  timeout_sec        = 1
-  check_interval_sec = 1
+  timeout_sec        = 5
+  check_interval_sec = 10
 
   grpc_health_check {
-    port = 50051
+    port = 50052
   }
 }
 

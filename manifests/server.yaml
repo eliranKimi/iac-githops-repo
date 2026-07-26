@@ -33,6 +33,9 @@ spec:
         - name: grpc
           containerPort: 50051
           protocol: TCP
+        - name: grpc-health
+          containerPort: 50052
+          protocol: TCP
         env:
         - name: GRPC_XDS_BOOTSTRAP
           value: /tmp/bootstrap/td-grpc-bootstrap.json
@@ -48,12 +51,12 @@ spec:
             memory: "128Mi"
         readinessProbe:
           grpc:
-            port: 50051
+            port: 50052
           initialDelaySeconds: 5
           periodSeconds: 10
         livenessProbe:
           grpc:
-            port: 50051
+            port: 50052
           initialDelaySeconds: 10
           periodSeconds: 15
       volumes:
