@@ -3,7 +3,7 @@ name: CD
 on:
   push:
     branches:
-      - main
+      - initial-setup
   workflow_dispatch: # Allows manual triggering
 
 jobs:
@@ -33,7 +33,7 @@ jobs:
         run: terraform plan -out=tfplan
 
       - name: Terraform Apply
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        if: github.ref == 'refs/heads/initial-setup' && github.event_name == 'push'
         run: terraform apply -auto-approve tfplan
 
   update-manifests:
@@ -54,4 +54,4 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: "Update image tag to ${{ github.event.inputs.tag }}"
-          branch: main
+          branch: initial-setup
