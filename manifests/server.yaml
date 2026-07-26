@@ -14,13 +14,18 @@ spec:
     metadata:
       labels:
         app: greeter-server
-      annotations:
-        # Required for GKE Cloud Service Mesh proxyless gRPC injection.
-        # This annotation tells the GKE mesh dataplane to inject the xDS
-        # bootstrap config into the pod via GRPC_XDS_BOOTSTRAP env var.
-        security.cloud.google.com/use-workload-certificates: "true"
     spec:
       serviceAccountName: greeter-service-account
+      # Init container generates the xDS bootstrap config for Traffic Director
+      initContainers:
+      - name: grpc-td-init
+        image: gcr.io/trafficdirector-prod/td-grpc-bootstrap:0.15.0
+        args:
+        - "--output=/tmp/bootstrap/td-grpc-bootstrap.json"
+        - "--vpc-network-name=grpc-proxyless-vpc"
+        volumeMounts:
+        - mountPath: /tmp/bootstrap
+          name: grpc-td-bootstrap
       containers:
       - name: greeter-server
         image: us-central1-docker.pkg.dev/utila-eliran-home/greeter/greeter:latest
@@ -29,11 +34,11 @@ spec:
           containerPort: 50051
           protocol: TCP
         env:
-        # The xDS bootstrap config file path is injected by the GKE mesh
-        # dataplane init container when the annotation above is set.
-        # This env var tells the gRPC xDS library where to find the config.
         - name: GRPC_XDS_BOOTSTRAP
-          value: /var/run/secrets/workload-spiffe-credentials/bootstrap.json
+          value: /tmp/bootstrap/td-grpc-bootstrap.json
+        volumeMounts:
+        - mountPath: /tmp/bootstrap
+          name: grpc-td-bootstrap
         resources:
           requests:
             cpu: "100m"
@@ -51,6 +56,9 @@ spec:
             port: 50051
           initialDelaySeconds: 10
           periodSeconds: 15
+      volumes:
+      - name: grpc-td-bootstrap
+        emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
