@@ -27,3 +27,9 @@ variable "iac_repo_name" {
   type        = string
   default     = "iac-githops-repo"
 }
+
+variable "gke_node_zones" {
+  description = "List of zones where GKE nodes (and NEGs) are created."
+  type        = list(string)
+  default     = ["us-central1-b", "us-central1-f"]
+}
