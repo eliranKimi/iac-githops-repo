@@ -2,6 +2,27 @@
 # Cloud Service Mesh (Traffic Director) Resources
 # ------------------------------------------------------------------------------
 
+# Service Account for the application pods (greeter server and client)
+resource "google_service_account" "greeter_sa" {
+  project      = var.project_id
+  account_id   = "greeter-sa"
+  display_name = "Greeter Application Service Account"
+}
+
+# Grant Traffic Director permissions to the greeter service account
+resource "google_project_iam_member" "greeter_sa_traffic_director" {
+  project = var.project_id
+  role    = "roles/trafficdirector.client"
+  member  = "serviceAccount:${google_service_account.greeter_sa.email}"
+}
+
+# Workload Identity binding: allow the Kubernetes SA to impersonate the GCP SA
+resource "google_service_account_iam_member" "greeter_workload_identity" {
+  service_account_id = google_service_account.greeter_sa.name
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "serviceAccount:${var.project_id}.svc.id.goog[grpc-proxyless/greeter-service-account]"
+}
+
 # Health Check for the gRPC service
 resource "google_compute_health_check" "grpc_health_check" {
   name               = "grpc-health-check"
