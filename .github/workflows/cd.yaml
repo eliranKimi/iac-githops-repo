@@ -3,7 +3,10 @@ name: CD - Terraform Plan & Apply
 on:
   push:
     branches:
-      - initial-setup
+      - main
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       action:
@@ -120,4 +123,4 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "chore: update image tag to ${{ github.event.inputs.tag }}"
-          branch: initial-setup
+          branch: main

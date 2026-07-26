@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: 'https://github.com/eliranKimi/iac-githops-repo.git'
     path: manifests
-    targetRevision: initial-setup
+    targetRevision: main
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: grpc-proxyless
