@@ -18,5 +18,5 @@ spec:
       serviceAccountName: greeter-service-account
       containers:
       - name: greeter-client
-        image: your-gcr-project/greeter:latest # Replace with your GCR project
+        image: us-central1-docker.pkg.dev/utila-eliran-home/greeter/greeter:latest
         command: ["/client"]

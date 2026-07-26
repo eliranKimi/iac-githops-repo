@@ -18,7 +18,7 @@ spec:
       serviceAccountName: greeter-service-account
       containers:
       - name: greeter-server
-        image: your-gcr-project/greeter:latest # Replace with your GCR project
+        image: us-central1-docker.pkg.dev/utila-eliran-home/greeter/greeter:latest
         ports:
         - containerPort: 50051
 ---

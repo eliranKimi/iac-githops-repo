@@ -37,11 +37,24 @@ resource "google_project_iam_member" "terraform_sa_roles" {
 }
 
 # IAM role for the GCR Pusher Service Account
-# Artifact Registry Writer is preferred over storage.admin for new projects
+# Artifact Registry Writer allows pushing images to Artifact Registry
 resource "google_project_iam_member" "gcr_pusher_sa_role" {
   project = var.project_id
   role    = "roles/artifactregistry.writer"
   member  = "serviceAccount:${google_service_account.gcr_pusher_sa.email}"
+}
+
+# Allow GKE nodes (default compute SA) to pull images from Artifact Registry
+# GKE nodes use the Compute Engine default service account by default
+resource "google_project_iam_member" "gke_node_artifact_registry_reader" {
+  project = var.project_id
+  role    = "roles/artifactregistry.reader"
+  member  = "serviceAccount:${data.google_compute_default_service_account.default.email}"
+}
+
+# Data source to get the default Compute Engine service account
+data "google_compute_default_service_account" "default" {
+  project = var.project_id
 }
 
 # Also grant storage.admin for legacy GCR (gcr.io) support

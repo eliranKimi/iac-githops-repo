@@ -113,8 +113,8 @@ jobs:
 
       - name: Update image tag in manifests
         run: |
-          sed -i "s|image:.*greeter.*|image: gcr.io/utila-eliran-home/greeter:${{ github.event.inputs.tag }}|g" manifests/server.yaml
-          sed -i "s|image:.*greeter.*|image: gcr.io/utila-eliran-home/greeter:${{ github.event.inputs.tag }}|g" manifests/client.yaml
+          sed -i "s|image:.*greeter.*|image: us-central1-docker.pkg.dev/utila-eliran-home/greeter/greeter:${{ github.event.inputs.tag }}|g" manifests/server.yaml
+          sed -i "s|image:.*greeter.*|image: us-central1-docker.pkg.dev/utila-eliran-home/greeter/greeter:${{ github.event.inputs.tag }}|g" manifests/client.yaml
 
       - name: Commit and push changes
         uses: stefanzweifel/git-auto-commit-action@v5
