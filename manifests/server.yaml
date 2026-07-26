@@ -65,6 +65,10 @@ kind: Service
 metadata:
   name: greeter-service
   namespace: grpc-proxyless
+  annotations:
+    # This annotation tells GKE to create a Network Endpoint Group (NEG)
+    # for this service. Traffic Director uses the NEG to discover pod endpoints.
+    cloud.google.com/neg: '{"exposed_ports": {"50051": {"name": "greeter-neg"}}}'
 spec:
   selector:
     app: greeter-server
