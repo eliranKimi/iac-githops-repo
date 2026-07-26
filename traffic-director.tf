@@ -35,6 +35,19 @@ resource "google_compute_health_check" "grpc_health_check" {
   }
 }
 
+# Data source to look up the NEG created by GKE via the cloud.google.com/neg
+# annotation on the Kubernetes Service. GKE creates one NEG per zone.
+# IMPORTANT: This data source will fail on the first terraform apply (before
+# the K8s Service is applied and GKE creates the NEG). The workflow is:
+#   1. terraform apply (creates backend service without backends)
+#   2. kubectl/ArgoCD applies server.yaml (GKE creates the NEG)
+#   3. terraform apply again (this data source resolves and adds the backend)
+data "google_compute_network_endpoint_group" "greeter_neg" {
+  project = var.project_id
+  name    = "greeter-neg"
+  zone    = "${var.region}-a" # GKE places NEGs in the same zone as the nodes
+}
+
 # Backend Service for the gRPC service
 resource "google_compute_backend_service" "grpc_backend_service" {
   name                  = "greeter-backend-service"
@@ -43,6 +56,13 @@ resource "google_compute_backend_service" "grpc_backend_service" {
   protocol              = "GRPC"
   load_balancing_scheme = "INTERNAL_SELF_MANAGED"
   health_checks         = [google_compute_health_check.grpc_health_check.id]
+
+  # Reference the GKE-created NEG so Traffic Director can route to pods
+  backend {
+    group                 = data.google_compute_network_endpoint_group.greeter_neg.id
+    balancing_mode        = "RATE"
+    max_rate_per_endpoint = 100
+  }
 }
 
 # URL Map to route requests to the backend service
