@@ -16,7 +16,8 @@ spec:
         app: greeter-server
     spec:
       serviceAccountName: greeter-service-account
-      # Init container generates the xDS bootstrap config for Traffic Director
+      # Init container generates the xDS bootstrap config for Traffic Director.
+      # Required for the CLIENT-side xDS integration (load balancing).
       initContainers:
       - name: grpc-td-init
         image: gcr.io/trafficdirector-prod/td-grpc-bootstrap:0.15.0
@@ -33,12 +34,6 @@ spec:
         - name: grpc
           containerPort: 50051
           protocol: TCP
-        - name: grpc-health
-          containerPort: 50052
-          protocol: TCP
-        env:
-        - name: GRPC_XDS_BOOTSTRAP
-          value: /tmp/bootstrap/td-grpc-bootstrap.json
         volumeMounts:
         - mountPath: /tmp/bootstrap
           name: grpc-td-bootstrap
@@ -51,12 +46,12 @@ spec:
             memory: "128Mi"
         readinessProbe:
           grpc:
-            port: 50052
+            port: 50051
           initialDelaySeconds: 5
           periodSeconds: 10
         livenessProbe:
           grpc:
-            port: 50052
+            port: 50051
           initialDelaySeconds: 10
           periodSeconds: 15
       volumes:

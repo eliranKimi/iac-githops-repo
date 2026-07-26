@@ -24,10 +24,8 @@ resource "google_service_account_iam_member" "greeter_workload_identity" {
 }
 
 # Health Check for the gRPC service
-# Uses port 50052 (plain gRPC health server) to avoid the chicken-and-egg
-# problem where xds.NewGRPCServer() starts in NOT_SERVING mode until it
-# receives config from Traffic Director, but Traffic Director won't send
-# config until the health check passes.
+# The server uses a standard grpc.NewServer() (not xds.NewGRPCServer()),
+# so the health check hits port 50051 directly.
 resource "google_compute_health_check" "grpc_health_check" {
   name               = "grpc-health-check"
   project            = var.project_id
@@ -35,7 +33,7 @@ resource "google_compute_health_check" "grpc_health_check" {
   check_interval_sec = 10
 
   grpc_health_check {
-    port = 50052
+    port = 50051
   }
 }
 
@@ -96,6 +94,8 @@ resource "google_compute_target_grpc_proxy" "grpc_proxy" {
 
 # Global Forwarding Rule
 # For proxyless gRPC with INTERNAL_SELF_MANAGED, ip_address must be 0.0.0.0
+# IMPORTANT: The network must match the VPC where the GKE cluster runs.
+# Traffic Director matches xDS clients to forwarding rules by network.
 resource "google_compute_global_forwarding_rule" "grpc_forwarding_rule" {
   name                  = "greeter-forwarding-rule"
   project               = var.project_id
@@ -103,4 +103,5 @@ resource "google_compute_global_forwarding_rule" "grpc_forwarding_rule" {
   ip_address            = "0.0.0.0"
   port_range            = "50051"
   load_balancing_scheme = "INTERNAL_SELF_MANAGED"
+  network               = "projects/${var.project_id}/global/networks/grpc-proxyless-vpc"
 }
